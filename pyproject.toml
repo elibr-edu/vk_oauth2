@@ -1,8 +1,11 @@
 [tool.poetry]
-package-mode = false
+name = "oauth2"
+version = "1.6.1"
+description = "babube"
+authors = ['Tema']
 
 [tool.poetry.dependencies]
-python = "^3.12"
+python = "^3.10.9"
 fastapi = "^0.111.0"
 uvicorn = {extras = ["standard"], version = "^0.29.0"}
 pydantic = {extras = ["email"], version = "^2.7.1"}
@@ -10,6 +13,7 @@ pydantic-settings = "^2.2.1"
 sqlalchemy = {extras = ["asyncio"], version = "^2.0.30"}
 asyncpg = "^0.29.0"
 alembic = "^1.13.1"
+exceptiongroup = "^1.2.0"
 
 [tool.poetry.group.dev.dependencies]
 black = "^24.4.2"
