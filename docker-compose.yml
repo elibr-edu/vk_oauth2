@@ -1,18 +1,27 @@
 services:
+  oauth2:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      APP_CONFIG__DB__URL: postgresql+asyncpg://postgres:password@pg:5432/oauth2
+    depends_on:
+      pg:
+        condition: service_healthy
 
   pg:
     image: postgres
     environment:
-      POSTGRES_DB: shop
-      POSTGRES_USER: user
+      POSTGRES_DB: oauth2
+      POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
     ports:
       - "5432:5432"
-
-  adminer:
-    image: adminer
-    ports:
-      - "8080:8080"
+    healthcheck:
+        test: ["CMD-SHELL", "pg_isready"]
+        interval: 10s
+        timeout: 5s
+        retries: 3 
 
   pgadmin:
     image: dpage/pgadmin4
@@ -22,3 +31,6 @@ services:
       PGADMIN_CONFIG_SERVER_MODE: 'False'
     ports:
       - "5050:80"
+    depends_on:
+      pg:
+        condition: service_healthy
