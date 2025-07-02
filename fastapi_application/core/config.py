@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from pydantic import PostgresDsn
 from pydantic_settings import (
     BaseSettings,
@@ -18,6 +18,13 @@ class ApiV1Prefix(BaseModel):
 class ApiPrefix(BaseModel):
     prefix: str = "/api"
     v1: ApiV1Prefix = ApiV1Prefix()
+
+
+class OAuthVKConfig(BaseModel):
+    client_id: str
+    redirect_uri: str
+
+    model_config = ConfigDict(env_prefix="VK__", extra="ignore")
 
 
 class DatabaseConfig(BaseModel):
@@ -46,6 +53,7 @@ class Settings(BaseSettings):
     run: RunConfig = RunConfig()
     api: ApiPrefix = ApiPrefix()
     db: DatabaseConfig
+    vk: OAuthVKConfig
 
 
 settings = Settings()
