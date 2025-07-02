@@ -4,10 +4,10 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.responses import ORJSONResponse
 
-from core.config import settings
+from fastapi_application.core.config import settings
 
-from api import router as api_router
-from core.models import db_helper
+from fastapi_application.api import router as api_router
+from fastapi_application.core.models import db_helper
 
 
 @asynccontextmanager

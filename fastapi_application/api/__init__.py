@@ -1,9 +1,9 @@
 from fastapi import APIRouter
-
-from core.config import settings
-from .api_v1 import router as router_api_v1
+from fastapi_application.crud.oauth import router as oauth_router
+from fastapi_application.core.config import settings
 
 router = APIRouter(
     prefix=settings.api.prefix,
 )
-router.include_router(router_api_v1)
+
+router.include_router(oauth_router)
