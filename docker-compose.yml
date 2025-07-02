@@ -8,6 +8,21 @@ services:
     depends_on:
       pg:
         condition: service_healthy
+    volumes:
+      -  ./fastapi_application:/app/fastapi_application
+      - ./fastapi_application/alembic:/app/fastapi_application/alembic
+
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./fastapi_application
+          target: /app/fastapi_application
+          ignore: 
+            - "alembic/versions/*"
+        - action: rebuild
+          path: ./poetry.lock
+    env_file:
+      - .env
 
   pg:
     image: postgres

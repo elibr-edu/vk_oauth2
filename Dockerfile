@@ -12,5 +12,8 @@ RUN poetry install --no-root --no-interaction --no-ansi
 
 COPY . .
 
-ENV PYTHONPATH=/app/fastapi-application
-CMD ["uvicorn", "fastapi-application.main:main_app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+RUN chmod +x prestart.sh
+
+ENV PYTHONPATH=/app/fastapi_application
+ENTRYPOINT ["./prestart.sh"]
+CMD ["uvicorn", "fastapi_application.main:main_app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
