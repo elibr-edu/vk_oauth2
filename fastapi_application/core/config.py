@@ -27,6 +27,12 @@ class OAuthVKConfig(BaseModel):
     model_config = ConfigDict(env_prefix="VK__", extra="ignore")
 
 
+class JWTConfig(BaseModel):
+    secret_key: str
+    algorithm: str
+    expire_minutes: int
+
+
 class DatabaseConfig(BaseModel):
     url: PostgresDsn
     echo: bool = False
@@ -54,6 +60,7 @@ class Settings(BaseSettings):
     api: ApiPrefix = ApiPrefix()
     db: DatabaseConfig
     vk: OAuthVKConfig
+    jwt: JWTConfig
 
 
 settings = Settings()
