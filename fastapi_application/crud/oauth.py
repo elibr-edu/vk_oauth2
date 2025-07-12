@@ -1,11 +1,15 @@
 from typing import Annotated
+
+from sqlalchemy import select
 from fastapi_application.core.models import db_helper
+from fastapi_application.core.models.models import User
 from fastapi_application.crud.generate_secrets import (
     exchange_code_for_token,
     generate_code,
     generate_state,
     get_vk_data,
     generate_jwt,
+    verify_jwt,
 )
 from fastapi_application.crud.create_user import create_user
 from fastapi_application.core.config import settings
@@ -34,7 +38,7 @@ async def redirect_url():
 
     response = RedirectResponse(auth_url)
 
-    response.set_cookie(key="vk_state", value=f"{state}:{code_verifier}", secure=True, max_age=300, httponly=True)
+    response.set_cookie(key="vk_state", value=f"{state}:{code_verifier}", secure=False, max_age=300, httponly=True)
 
     return response
 
@@ -74,13 +78,39 @@ async def login_vk(
 
     jwt_token = await generate_jwt(user.id)
 
-    # response = RedirectResponse(url="/")
-    # response.set_cookie(
-    #     key="auth_token",
-    #     value=f"Bearer {jwt_token}",
-    #     httponly=True,
-    #     secure=True,
-    #     samesite="lax",
-    #     max_age=7 * 24 * 3600,
-    # )
-    return jwt_token
+    response = RedirectResponse(url="/")
+    response.set_cookie(
+        key="auth_token",
+        value=f"Bearer {jwt_token}",
+        httponly=True,
+        secure=True,
+        samesite="lax",
+        max_age=7 * 24 * 3600,
+    )
+    return response
+
+
+@router.get("/users/me")
+async def get_current_user(request: Request, db: AsyncSession = Depends(db_helper.session_getter)):
+    cookie = request.cookies.get("auth_token")
+
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+    if not cookie:
+        raise credentials_exception
+
+    token = cookie.replace("Bearer", "").strip()
+
+    token_data = await verify_jwt(token, credentials_exception)
+
+    user_query = select(User).where(User.id == int(token_data.user_id))
+
+    query_result = await db.scalars(user_query)
+
+    user = query_result.first()
+
+    return user

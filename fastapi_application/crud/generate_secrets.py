@@ -2,14 +2,11 @@ import secrets
 import hashlib
 import base64
 import aiohttp
-from fastapi import Depends, HTTPException, Request, status
-from sqlalchemy import select
+from fastapi import HTTPException, status
+
 from fastapi_application.core.config import settings
 from datetime import datetime, timedelta
 from jose import jwt
-from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi_application.core.models import db_helper
-from fastapi_application.core.models.models import User
 from fastapi_application.core.schemas.token_data import TokenData
 
 
@@ -75,28 +72,3 @@ async def verify_jwt(token: str, credentials_exception: Exception):
     except:
         raise credentials_exception
     return token_data
-
-
-async def get_current_user(request: Request, db: AsyncSession = Depends(db_helper.session_getter)):
-    cookie = request.cookies.get("auth_token")
-
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-
-    if not cookie:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Cookie is invalid")
-
-    token = cookie.replace("Bearer", "").strip()
-
-    token_data = await verify_jwt(token, credentials_exception)
-
-    user_query = select(User).where(User.id == int(token_data.user_id))
-
-    query_result = await db.scalars(user_query)
-
-    user = query_result.first()
-
-    return user
