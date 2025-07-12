@@ -9,8 +9,7 @@ services:
       pg:
         condition: service_healthy
     volumes:
-      -  ./fastapi_application:/app/fastapi_application
-      - ./fastapi_application/alembic:/app/fastapi_application/alembic
+      - ./:/app
 
     develop:
       watch:
