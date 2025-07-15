@@ -3,6 +3,9 @@ from typing import Annotated
 from sqlalchemy import select
 from fastapi_application.core.models import db_helper
 from fastapi_application.core.models.models import User
+from fastapi_application.core.schemas.user_create import UserCreate
+from fastapi_application.core.schemas.user_login import UserLogin
+from fastapi_application.crud.verify_hashes import hash_password, verify_hashes
 from fastapi_application.crud.generate_secrets import (
     exchange_code_for_token,
     generate_code,
@@ -11,7 +14,7 @@ from fastapi_application.crud.generate_secrets import (
     generate_jwt,
     verify_jwt,
 )
-from fastapi_application.crud.create_user import create_user
+from fastapi_application.crud.vk_create_user import vk_create_user
 from fastapi_application.core.config import settings
 from fastapi.responses import RedirectResponse
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -74,7 +77,7 @@ async def login_vk(
         user_info["email"],
     )
 
-    user = await create_user(user_id, first_name, last_name, email, db)
+    user = await vk_create_user(user_id, first_name, last_name, email, db)
 
     jwt_token = await generate_jwt(user.id)
 
@@ -85,7 +88,7 @@ async def login_vk(
         httponly=True,
         secure=True,
         samesite="lax",
-        max_age=7 * 24 * 3600,
+        max_age=settings.jwt.expire_minutes,
     )
     return response
 
@@ -114,3 +117,46 @@ async def get_current_user(request: Request, db: AsyncSession = Depends(db_helpe
     user = query_result.first()
 
     return user
+
+
+@router.post("/login")
+async def user_login(credentials: UserLogin, db: Annotated[AsyncSession, Depends(db_helper.session_getter)]):
+    user_query = select(User).where(User.email == credentials.email)
+    query_result = await db.scalars(user_query)
+    user = query_result.first()
+
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User is not found")
+    if not verify_hashes(credentials.password, user.password):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Bad password")
+
+    token = await generate_jwt(user.id)
+
+    response = RedirectResponse(url="/")
+
+    response.set_cookie(
+        key="auth_token",
+        value=f"Bearer {token}",
+        httponly=True,
+        secure=True,
+        samesite="lax",
+        max_age=settings.jwt.expire_minutes,
+    )
+    return response
+
+
+@router.post("/register")
+async def register_user(credentials: UserCreate, db: Annotated[AsyncSession, Depends(db_helper.session_getter)]):
+    user_query = select(User).where(User.email == credentials.email)
+    query_result = await db.scalars(user_query)
+    user = query_result.first()
+
+    if user:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User exist already!")
+
+    user_data = credentials.model_dump(exclude={"password"})
+    user_data["password"] = hash_password(credentials.password)
+    new_user = User(**user_data)
+    db.add(new_user)
+    await db.commit()
+    return new_user
