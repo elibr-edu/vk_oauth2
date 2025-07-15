@@ -5,11 +5,13 @@ services:
       - "8000:8000"
     environment:
       APP_CONFIG__DB__URL: postgresql+asyncpg://postgres:password@pg:5432/oauth2
+      ALEMBIC_CONFIG: ./fastapi_application/alembic.ini
     depends_on:
       pg:
         condition: service_healthy
     volumes:
       - ./:/app
+    
 
     develop:
       watch:
